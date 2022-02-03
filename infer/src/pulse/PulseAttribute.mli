@@ -35,6 +35,7 @@ type t =
   | ISLAbduced of Trace.t  (** The allocation is abduced so as the analysis could run normally *)
   | MustBeInitialized of Timestamp.t * Trace.t
   | MustBeValid of Timestamp.t * Trace.t * Invalidation.must_be_valid_reason option
+  | MustBeChildOf of Typ.t * Timestamp.t * Trace.t
   | JavaResourceReleased of JavaClassName.t
   | RefCounted
   | StdVectorReserve
@@ -78,6 +79,8 @@ module Attributes : sig
 
   val get_must_be_valid :
     t -> (Timestamp.t * Trace.t * Invalidation.must_be_valid_reason option) option
+
+  val get_must_be_child_of : t -> (Typ.t * Timestamp.t * Trace.t) option
 
   val get_written_to : t -> Trace.t option
 

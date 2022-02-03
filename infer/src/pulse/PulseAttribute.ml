@@ -65,6 +65,7 @@ module Attribute = struct
     | ISLAbduced of Trace.t
     | MustBeInitialized of Timestamp.t * Trace.t
     | MustBeValid of Timestamp.t * Trace.t * Invalidation.must_be_valid_reason option
+    | MustBeChildOf of Typ.t * Timestamp.t * Trace.t
     | JavaResourceReleased of JavaClassName.t
     | RefCounted
     | StdVectorReserve
@@ -102,6 +103,11 @@ module Attribute = struct
 
 
   let must_be_valid_rank = Variants.to_rank (MustBeValid (Timestamp.t0, dummy_trace, None))
+
+  let must_be_child_of_rank =
+    Variants.to_rank
+      (MustBeChildOf ({Typ.desc= Tvoid; quals= Typ.mk_type_quals ()}, Timestamp.t0, dummy_trace))
+
 
   let std_vector_reserve_rank = Variants.to_rank StdVectorReserve
 
@@ -177,6 +183,11 @@ module Attribute = struct
           (Trace.pp ~pp_immediate:(pp_string_if_debug "access"))
           trace Invalidation.pp_must_be_valid_reason reason
           (timestamp :> int)
+    | MustBeChildOf (typ, timestamp, trace) ->
+        F.fprintf f "MustBeChildOf(%a, %a, t=%d)" (Typ.pp Pp.text) typ
+          (Trace.pp ~pp_immediate:(pp_string_if_debug "cast"))
+          trace
+          (timestamp :> int)
     | JavaResourceReleased class_name ->
         F.fprintf f "Released(%a)" JavaClassName.pp class_name
     | RefCounted ->
@@ -194,7 +205,7 @@ module Attribute = struct
 
 
   let is_suitable_for_pre = function
-    | MustBeValid _ | MustBeInitialized _ | RefCounted ->
+    | MustBeValid _ | MustBeInitialized _ | MustBeChildOf _ | RefCounted ->
         true
     | Invalid _ | Allocated _ | ISLAbduced _ ->
         Config.pulse_isl
@@ -213,7 +224,7 @@ module Attribute = struct
 
 
   let is_suitable_for_post = function
-    | MustBeInitialized _ | MustBeValid _ | UnreachableAt _ ->
+    | MustBeInitialized _ | MustBeValid _ | MustBeChildOf _ | UnreachableAt _ ->
         false
     | AddressOfCppTemporary _
     | AddressOfStackVariable _
@@ -247,6 +258,8 @@ module Attribute = struct
         MustBeValid (timestamp, add_call_to_trace trace, reason)
     | MustBeInitialized (_timestamp, trace) ->
         MustBeInitialized (timestamp, add_call_to_trace trace)
+    | MustBeChildOf (typ, _timestamp, trace) ->
+        MustBeChildOf (typ, timestamp, add_call_to_trace trace)
     | UnknownEffect (call, hist) ->
         UnknownEffect
           ( call
@@ -303,6 +316,13 @@ module Attributes = struct
     |> Option.map ~f:(fun attr ->
            let[@warning "-8"] (Attribute.MustBeValid (timestamp, trace, reason)) = attr in
            (timestamp, trace, reason) )
+
+
+  let get_must_be_child_of attrs =
+    Set.find_rank attrs Attribute.must_be_child_of_rank
+    |> Option.map ~f:(fun attr ->
+           let[@warning "-8"] (Attribute.MustBeChildOf (typ, timestamp, trace)) = attr in
+           (typ, timestamp, trace) )
 
 
   let get_written_to attrs =

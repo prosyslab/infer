@@ -145,6 +145,8 @@ let get_invalid = get_attribute Attributes.get_invalid
 
 let get_must_be_valid = get_attribute Attributes.get_must_be_valid
 
+let get_must_be_child_of = get_attribute Attributes.get_must_be_child_of
+
 let is_must_be_valid_or_allocated_isl address attrs =
   Option.is_some (get_must_be_valid address attrs)
   || Option.is_some (get_attribute Attributes.get_allocation address attrs)
