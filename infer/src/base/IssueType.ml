@@ -1137,6 +1137,11 @@ let wrong_argument_number =
 
 let unreachable_cost_call ~kind = register_cost ~enabled:false ~kind "%s_UNREACHABLE_AT_EXIT"
 
+let incorrect_pointer_cast_pulse =
+  register_with_latent ~id:"INCORRECT_POINTER_CAST" Error Pulse ~hum:"Incorrect Pointer Cast"
+    ~user_documentation:"Incorrect cast of pointers." (* TODO *)
+
+
 (* register enabled cost issues *)
 let is_autoreleasepool_size_issue =
   let autoreleasepool_size_issues = ref IssueSet.empty in

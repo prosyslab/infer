@@ -398,6 +398,8 @@ val wrong_argument_number : t
 
 val unreachable_cost_call : kind:CostKind.t -> t
 
+val incorrect_pointer_cast_pulse : latent:bool -> t
+
 val is_autoreleasepool_size_issue : t -> bool
 
 module Map : PrettyPrintable.PPMap with type key = t
