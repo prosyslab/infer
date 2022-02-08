@@ -49,6 +49,9 @@ type read_uninitialized_value =
             value *) }
 [@@deriving compare, equal, yojson_of]
 
+type incorrect_pointer_cast = {calling_context: calling_context; trace: Trace.t; typ: Typ.t}
+[@@deriving compare, equal, yojson_of]
+
 (** an error to report to the user *)
 type t =
   | AccessToInvalidAddress of access_to_invalid_address
@@ -59,6 +62,7 @@ type t =
   | ResourceLeak of {class_name: JavaClassName.t; allocation_trace: Trace.t; location: Location.t}
   | StackVariableAddressEscape of {variable: Var.t; history: ValueHistory.t; location: Location.t}
   | UnnecessaryCopy of {variable: Var.t; location: Location.t}
+  | IncorrectPointerCast of incorrect_pointer_cast
 [@@deriving equal]
 
 val aborts_execution : t -> bool

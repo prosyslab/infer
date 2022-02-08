@@ -38,11 +38,16 @@ type erlang_error =
 type read_uninitialized_value = {calling_context: calling_context; trace: Trace.t}
 [@@deriving compare, equal]
 
+type incorrect_pointer_cast = {calling_context: calling_context; trace: Trace.t; typ: Typ.t}
+[@@deriving compare, equal]
+
 let yojson_of_access_to_invalid_address = [%yojson_of: _]
 
 let yojson_of_erlang_error = [%yojson_of: _]
 
 let yojson_of_read_uninitialized_value = [%yojson_of: _]
+
+let yojson_of_incorrect_pointer_cast = [%yojson_of: _]
 
 type t =
   | AccessToInvalidAddress of access_to_invalid_address
@@ -53,14 +58,17 @@ type t =
   | ResourceLeak of {class_name: JavaClassName.t; allocation_trace: Trace.t; location: Location.t}
   | StackVariableAddressEscape of {variable: Var.t; history: ValueHistory.t; location: Location.t}
   | UnnecessaryCopy of {variable: Var.t; location: Location.t}
+  | IncorrectPointerCast of incorrect_pointer_cast
 [@@deriving equal]
 
 let get_location = function
   | AccessToInvalidAddress {calling_context= []; access_trace}
-  | ReadUninitializedValue {calling_context= []; trace= access_trace} ->
+  | ReadUninitializedValue {calling_context= []; trace= access_trace}
+  | IncorrectPointerCast {calling_context= []; trace= access_trace} ->
       Trace.get_outer_location access_trace
   | AccessToInvalidAddress {calling_context= (_, location) :: _}
-  | ReadUninitializedValue {calling_context= (_, location) :: _} ->
+  | ReadUninitializedValue {calling_context= (_, location) :: _}
+  | IncorrectPointerCast {calling_context= (_, location) :: _} ->
       (* report at the call site that triggers the bug *) location
   | MemoryLeak {location}
   | ResourceLeak {location}
@@ -94,6 +102,7 @@ let aborts_execution = function
          abort! *)
       true
   | ReadUninitializedValue _
+  | IncorrectPointerCast _
   | StackVariableAddressEscape _
   | UnnecessaryCopy _
   | RetainCycle _
@@ -317,6 +326,8 @@ let get_message diagnostic =
       in
       F.asprintf "%s uninitialized value%t being read on %t" pulse_start_msg pp_access_path
         pp_location
+  | IncorrectPointerCast _ ->
+      F.asprintf "%s incorrect pointer cast. (Todo:)" pulse_start_msg
   | StackVariableAddressEscape {variable; _} ->
       let pp_var f var =
         if Var.is_cpp_temporary var then F.pp_print_string f "C++ temporary"
@@ -462,6 +473,13 @@ let get_trace = function
            ~pp_immediate:(fun fmt -> F.pp_print_string fmt "read to uninitialized value occurs here")
            trace
       @@ []
+  | IncorrectPointerCast {calling_context; trace} ->
+      get_trace_calling_context calling_context
+      @@ Trace.add_to_errlog ~nesting:0
+           ~pp_immediate:(fun fmt ->
+             F.pp_print_string fmt "incorrect pointer cast occurs here (Todo: )" )
+           trace
+      @@ []
   | StackVariableAddressEscape {history; location; _} ->
       ValueHistory.add_to_errlog ~nesting:0 history
       @@
@@ -511,3 +529,5 @@ let get_issue_type ~latent issue_type =
       IssueType.no_matching_branch_in_try ~latent
   | ReadUninitializedValue _, _ ->
       IssueType.uninitialized_value_pulse ~latent
+  | IncorrectPointerCast _, _ ->
+      IssueType.incorrect_pointer_cast_pulse ~latent

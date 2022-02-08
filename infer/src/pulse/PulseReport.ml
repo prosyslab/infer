@@ -44,6 +44,7 @@ let is_constant_deref_without_invalidation (diagnostic : Diagnostic.t) =
   | ErlangError _
   | ReadUninitializedValue _
   | StackVariableAddressEscape _
+  | IncorrectPointerCast _
   | UnnecessaryCopy _ ->
       false
   | AccessToInvalidAddress {invalidation; access_trace} -> (
