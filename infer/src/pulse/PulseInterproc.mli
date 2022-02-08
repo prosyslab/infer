@@ -10,7 +10,8 @@ open PulseBasicInterface
 open PulseDomainInterface
 
 val apply_prepost :
-     PathContext.t
+     Tenv.t
+  -> PathContext.t
   -> is_isl_error_prepost:bool
   -> Procname.t
   -> Location.t

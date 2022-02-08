@@ -105,7 +105,7 @@ let apply_callee tenv ({PathContext.timestamp} as path) ~caller_proc_desc callee
   in
   let map_call_result ~is_isl_error_prepost callee_prepost ~f =
     let* post, return_val_opt, subst =
-      PulseInterproc.apply_prepost path ~is_isl_error_prepost callee_pname call_loc ~callee_prepost
+      PulseInterproc.apply_prepost tenv path ~is_isl_error_prepost callee_pname call_loc ~callee_prepost
         ~captured_vars_with_actuals ~formals ~actuals astate
     in
     let post =

@@ -670,7 +670,7 @@ let apply_post path callee_proc_name call_location pre_post ~captured_vars_with_
   r
 
 
-let check_all_valid path callee_proc_name call_location {AbductiveDomain.pre; _} call_state =
+let check_all_valid tenv path callee_proc_name call_location {AbductiveDomain.pre; _} call_state =
   (* collect all the checks to perform then do each check in timestamp order to make sure we report
      the first issue if any *)
   let addresses_to_check =
@@ -683,17 +683,29 @@ let check_all_valid path callee_proc_name call_location {AbductiveDomain.pre; _}
           | Some must_be_valid_data ->
               (addr_hist_caller, `MustBeValid must_be_valid_data) :: to_check
         in
-        match
-          BaseAddressAttributes.get_must_be_initialized addr_pre (pre :> BaseDomain.t).attrs
-        with
-        | None ->
-            to_check
-        | Some must_be_init_data ->
-            (addr_hist_caller, `MustBeInitialized must_be_init_data) :: to_check )
+        let to_check =
+          match
+            BaseAddressAttributes.get_must_be_initialized addr_pre (pre :> BaseDomain.t).attrs
+          with
+          | None ->
+              to_check
+          | Some must_be_init_data ->
+              (addr_hist_caller, `MustBeInitialized must_be_init_data) :: to_check
+        in
+        let to_check =
+          match BaseAddressAttributes.get_must_be_child_of addr_pre (pre :> BaseDomain.t).attrs with
+          | None ->
+              to_check
+          | Some must_be_child_of_data ->
+              (addr_hist_caller, `MustBeChildOf must_be_child_of_data) :: to_check
+        in
+        to_check )
       call_state.subst []
   in
   let timestamp_of_check = function
-    | `MustBeValid (timestamp, _, _) | `MustBeInitialized (timestamp, _) ->
+    | `MustBeValid (timestamp, _, _)
+    | `MustBeInitialized (timestamp, _)
+    | `MustBeChildOf (_, timestamp, _) ->
         timestamp
   in
   List.sort addresses_to_check ~compare:(fun (_, check1) (_, check2) ->
@@ -731,6 +743,17 @@ let check_all_valid path callee_proc_name call_location {AbductiveDomain.pre; _}
                       { diagnostic=
                           Diagnostic.ReadUninitializedValue
                             {calling_context= []; trace= access_trace}
+                      ; astate } )
+         | `MustBeChildOf (typ, _timestamp, callee_access_trace) ->
+             let access_trace = mk_access_trace callee_access_trace in
+             AddressAttributes.check_child_of tenv typ path access_trace addr_caller astate
+             |> Result.map_error ~f:(fun () ->
+                    L.d_printfln "ERROR: caller's %a is not a child of %a!" AbstractValue.pp
+                      addr_caller (Typ.pp Pp.text) typ ;
+                    AccessResult.ReportableError
+                      { diagnostic=
+                          Diagnostic.IncorrectPointerCast
+                            {calling_context= []; trace= access_trace; typ}
                       ; astate } ) )
 
 
@@ -783,8 +806,8 @@ let isl_check_all_invalid invalid_addr_callers callee_proc_name call_location
    - for each actual, write the post for that actual
 
    - if aliasing is introduced at any time then give up *)
-let apply_prepost path ~is_isl_error_prepost callee_proc_name call_location ~callee_prepost:pre_post
-    ~captured_vars_with_actuals ~formals ~actuals astate =
+let apply_prepost tenv path ~is_isl_error_prepost callee_proc_name call_location
+    ~callee_prepost:pre_post ~captured_vars_with_actuals ~formals ~actuals astate =
   L.d_printfln "Applying pre/post for %a(%a):@\n%a" Procname.pp callee_proc_name
     (Pp.seq ~sep:"," Var.pp) formals AbductiveDomain.pp pre_post ;
   let empty_call_state =
@@ -817,7 +840,7 @@ let apply_prepost path ~is_isl_error_prepost callee_proc_name call_location ~cal
         let* astate =
           if Config.pulse_isl then Ok call_state.astate
           else
-            check_all_valid path callee_proc_name call_location pre_post call_state
+            check_all_valid tenv path callee_proc_name call_location pre_post call_state
             |> AccessResult.of_result
         in
         (* reset [visited] *)
