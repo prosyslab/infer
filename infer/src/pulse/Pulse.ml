@@ -442,7 +442,8 @@ module PulseTransferFunctions = struct
               else
                 [ (let* astate, rhs_addr_hist = PulseOperations.eval_deref path loc rhs_exp astate in
                    and_is_int_if_integer_type typ (fst rhs_addr_hist) astate
-                   >>| PulseOperations.write_id lhs_id rhs_addr_hist ) ]
+                   >>| PulseOperations.write_id lhs_id rhs_addr_hist
+                   >>= PulseOperations.check_type_cast tenv path loc typ rhs_addr_hist ) ]
             in
             PulseReport.report_results tenv proc_desc err_log loc results
           in
