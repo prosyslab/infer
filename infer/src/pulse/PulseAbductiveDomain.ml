@@ -256,6 +256,12 @@ module AddressAttributes = struct
     else abduce_attribute addr (MustBeInitialized (path.PathContext.timestamp, access_trace)) astate
 
 
+  let check_child_of tenv typ path access_trace addr astate =
+    let attrs = (astate.post :> base_domain).attrs in
+    let+ () = BaseAddressAttributes.check_child_of tenv typ addr attrs in
+    abduce_attribute addr (MustBeChildOf (typ, path.PathContext.timestamp, access_trace)) astate
+
+
   (** [astate] with [astate.post.attrs = f astate.post.attrs] *)
   let map_post_attrs ~f astate =
     let new_post = PostDomain.update astate.post ~attrs:(f (astate.post :> base_domain).attrs) in

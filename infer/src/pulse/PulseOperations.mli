@@ -328,3 +328,6 @@ val get_captured_actuals :
   -> actual_closure:AbstractValue.t * ValueHistory.t
   -> t
   -> (t * (Var.t * ((AbstractValue.t * ValueHistory.t) * Typ.t)) list) AccessResult.t
+
+
+  val check_type_cast : Tenv.t -> PathContext.t -> Location.t -> Typ.t -> AbstractValue.t * ValueHistory.t -> t -> t AccessResult.t

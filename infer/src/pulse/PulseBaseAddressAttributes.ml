@@ -102,6 +102,24 @@ let check_initialized address attrs =
   else Ok ()
 
 
+let check_child_of tenv typ address attrs =
+  L.d_printfln "Checking if %a is child of %a" AbstractValue.pp address (Typ.pp Pp.text) typ ;
+  match Graph.find_opt address attrs |> Option.bind ~f:Attributes.get_dynamic_type with
+  | None ->
+      Ok () (* Raise error only if we have precise type information*)
+  | Some dynamic_typ ->
+      if
+        match (dynamic_typ.desc, typ.Typ.desc) with
+        | Typ.Tstruct dynamic_typ_name, Typ.Tstruct parent_typ_name ->
+            PatternMatch.is_subtype tenv dynamic_typ_name parent_typ_name
+        | _ ->
+            Typ.equal typ dynamic_typ
+      then Ok ()
+      else Error ()
+
+
+(* if PatternMatch.is_subtype tenv dynamic_typ typ then Ok () else Error () *)
+
 let get_attribute getter address attrs =
   let open Option.Monad_infix in
   Graph.find_opt address attrs >>= getter

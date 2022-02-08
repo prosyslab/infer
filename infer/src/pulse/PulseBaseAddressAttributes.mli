@@ -35,6 +35,8 @@ val check_valid : AbstractValue.t -> t -> (unit, Invalidation.t * Trace.t) resul
 
 val check_initialized : AbstractValue.t -> t -> (unit, unit) result
 
+val check_child_of : Tenv.t -> Typ.t -> AbstractValue.t -> t -> (unit, unit) result
+
 val invalidate : AbstractValue.t * ValueHistory.t -> Invalidation.t -> Location.t -> t -> t
 
 val get_allocation : AbstractValue.t -> t -> (Attribute.allocator * Trace.t) option
