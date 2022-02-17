@@ -130,7 +130,7 @@ module AddressAttributes : sig
 
   val check_initialized : PathContext.t -> Trace.t -> AbstractValue.t -> t -> (t, unit) result
  
-  val check_child_of : Tenv.t -> Typ.t -> PathContext.t -> Trace.t -> AbstractValue.t -> t -> (t, unit) result
+  val check_child_of : Tenv.t -> Typ.t -> PathContext.t -> Trace.t -> AbstractValue.t -> t -> (t, Typ.t) result
 
   val invalidate : AbstractValue.t * ValueHistory.t -> Invalidation.t -> Location.t -> t -> t
 

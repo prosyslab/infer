@@ -747,13 +747,17 @@ let check_all_valid tenv path callee_proc_name call_location {AbductiveDomain.pr
          | `MustBeChildOf (typ, _timestamp, callee_access_trace) ->
              let access_trace = mk_access_trace callee_access_trace in
              AddressAttributes.check_child_of tenv typ path access_trace addr_caller astate
-             |> Result.map_error ~f:(fun () ->
-                    L.d_printfln "ERROR: caller's %a is not a child of %a!" AbstractValue.pp
-                      addr_caller (Typ.pp Pp.text) typ ;
+             |> Result.map_error ~f:(fun addr_typ ->
+                    L.d_printfln
+                      "ERROR: caller's %a is of type '%a', when it should be a child of '%a'."
+                      AbstractValue.pp addr_caller (Typ.pp Pp.text) addr_typ (Typ.pp Pp.text) typ ;
                     AccessResult.ReportableError
                       { diagnostic=
                           Diagnostic.IncorrectPointerCast
-                            {calling_context= []; trace= access_trace; typ}
+                            { calling_context= []
+                            ; trace= access_trace
+                            ; from_dynamic_typ= addr_typ
+                            ; to_typ= typ }
                       ; astate } ) )
 
 

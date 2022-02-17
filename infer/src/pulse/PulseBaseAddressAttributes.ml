@@ -115,7 +115,7 @@ let check_child_of tenv typ address attrs =
         | _ ->
             Typ.equal typ dynamic_typ
       then Ok ()
-      else Error ()
+      else Error (dynamic_typ)
 
 
 (* if PatternMatch.is_subtype tenv dynamic_typ typ then Ok () else Error () *)

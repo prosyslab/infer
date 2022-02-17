@@ -38,7 +38,8 @@ type erlang_error =
 type read_uninitialized_value = {calling_context: calling_context; trace: Trace.t}
 [@@deriving compare, equal]
 
-type incorrect_pointer_cast = {calling_context: calling_context; trace: Trace.t; typ: Typ.t}
+type incorrect_pointer_cast =
+  {calling_context: calling_context; trace: Trace.t; from_dynamic_typ: Typ.t; to_typ: Typ.t}
 [@@deriving compare, equal]
 
 let yojson_of_access_to_invalid_address = [%yojson_of: _]
@@ -326,8 +327,11 @@ let get_message diagnostic =
       in
       F.asprintf "%s uninitialized value%t being read on %t" pulse_start_msg pp_access_path
         pp_location
-  | IncorrectPointerCast _ ->
-      F.asprintf "%s incorrect pointer cast. (Todo:)" pulse_start_msg
+  | IncorrectPointerCast {from_dynamic_typ; to_typ} ->
+      F.asprintf
+        "%s incorrect pointer cast.\n\n Value of dynamic type '%a' is casted to uncompatible type '%a' \
+         here: (Todo)"
+        pulse_start_msg (Typ.pp Pp.text) (Typ.mk_ptr from_dynamic_typ) (Typ.pp Pp.text) (Typ.mk_ptr to_typ)
   | StackVariableAddressEscape {variable; _} ->
       let pp_var f var =
         if Var.is_cpp_temporary var then F.pp_print_string f "C++ temporary"

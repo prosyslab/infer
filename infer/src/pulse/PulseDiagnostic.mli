@@ -49,7 +49,8 @@ type read_uninitialized_value =
             value *) }
 [@@deriving compare, equal, yojson_of]
 
-type incorrect_pointer_cast = {calling_context: calling_context; trace: Trace.t; typ: Typ.t}
+type incorrect_pointer_cast =
+  {calling_context: calling_context; trace: Trace.t; from_dynamic_typ: Typ.t; to_typ: Typ.t}
 [@@deriving compare, equal, yojson_of]
 
 (** an error to report to the user *)

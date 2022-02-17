@@ -768,13 +768,17 @@ let get_captured_actuals path location ~captured_vars ~actual_closure astate =
 let check_type_cast tenv path location dest_typ (addr, history) astate =
   let access_trace = Trace.Immediate {location; history} in
   match dest_typ with
-  | {Typ.desc= Tptr ({Typ.desc= (Tstruct _)} as typ, _)} ->
+  | {Typ.desc= Tptr (({Typ.desc= Tstruct _} as typ), _)} ->
       let* astate =
         AddressAttributes.check_child_of tenv typ path access_trace addr astate
-        |> Result.map_error ~f:(fun () ->
+        |> Result.map_error ~f:(fun addr_typ ->
                ReportableError
                  { diagnostic=
-                     Diagnostic.IncorrectPointerCast {calling_context= []; trace= access_trace; typ= dest_typ}
+                     Diagnostic.IncorrectPointerCast
+                       { calling_context= []
+                       ; trace= access_trace
+                       ; from_dynamic_typ= addr_typ
+                       ; to_typ= typ }
                  ; astate } )
         |> AccessResult.of_result
       in
