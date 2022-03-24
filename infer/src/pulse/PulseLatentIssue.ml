@@ -59,15 +59,24 @@ let is_manifest (astate : AbductiveDomain.summary) =
 (* require a summary because we don't want to stop reporting because some non-abducible condition is
    not true as calling context cannot possibly influence such conditions *)
 let should_report (astate : AbductiveDomain.summary) (diagnostic : Diagnostic.t) =
-  match diagnostic with
-  | MemoryLeak _ | ResourceLeak _ | RetainCycle _ | StackVariableAddressEscape _ | UnnecessaryCopy _ | IncorrectPointerCast _ (* Todo *)
+  if Config.show_latent then
+    match diagnostic with
+    | MemoryLeak _ | ResourceLeak _ | RetainCycle _ | StackVariableAddressEscape _ | UnnecessaryCopy _ | IncorrectPointerCast _ (* Todo *)
+    | AccessToInvalidAddress _ | ErlangError _ | ReadUninitializedValue _
     ->
-      (* these issues are reported regardless of the calling context, not sure if that's the right
-         decision yet *)
-      `ReportNow
-  | AccessToInvalidAddress latent ->
-      if is_manifest astate then `ReportNow else `DelayReport (AccessToInvalidAddress latent)
-  | ErlangError latent ->
-      if is_manifest astate then `ReportNow else `DelayReport (ErlangError latent)
-  | ReadUninitializedValue latent ->
-      if is_manifest astate then `ReportNow else `DelayReport (ReadUninitializedValue latent)
+    (* these issues are reported regardless of the calling context, not sure if that's the right
+      decision yet *)
+    `ReportNow
+  else
+    match diagnostic with
+    | MemoryLeak _ | ResourceLeak _ | RetainCycle _ | StackVariableAddressEscape _ | UnnecessaryCopy _ | IncorrectPointerCast _ (* Todo *)
+    ->
+    (* these issues are reported regardless of the calling context, not sure if that's the right
+      decision yet *)
+    `ReportNow
+    | AccessToInvalidAddress latent ->
+        if is_manifest astate then `ReportNow else `DelayReport (AccessToInvalidAddress latent)
+    | ErlangError latent ->
+        if is_manifest astate then `ReportNow else `DelayReport (ErlangError latent)
+    | ReadUninitializedValue latent ->
+        if is_manifest astate then `ReportNow else `DelayReport (ReadUninitializedValue latent)

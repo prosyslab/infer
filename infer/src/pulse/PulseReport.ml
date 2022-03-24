@@ -117,14 +117,23 @@ let report_summary_error tenv proc_desc err_log
   match access_error with
   | PotentialInvalidAccess {astate; address; must_be_valid}
   | PotentialInvalidAccessSummary {astate; address; must_be_valid} ->
-      if Config.pulse_report_latent_issues then
+    if Config.pulse_report_latent_issues then
+      if Config.show_latent then
+        report ~latent:false proc_desc err_log
+        (AccessToInvalidAddress
+           { calling_context= []
+           ; invalidation= ConstantDereference IntLit.zero
+           ; invalidation_trace= Immediate {location= Procdesc.get_loc proc_desc; history= Epoch}
+           ; access_trace= fst must_be_valid
+           ; must_be_valid_reason= snd must_be_valid } )
+      else
         report ~latent:true proc_desc err_log
-          (AccessToInvalidAddress
-             { calling_context= []
-             ; invalidation= ConstantDereference IntLit.zero
-             ; invalidation_trace= Immediate {location= Procdesc.get_loc proc_desc; history= Epoch}
-             ; access_trace= fst must_be_valid
-             ; must_be_valid_reason= snd must_be_valid } ) ;
+        (AccessToInvalidAddress
+           { calling_context= []
+           ; invalidation= ConstantDereference IntLit.zero
+           ; invalidation_trace= Immediate {location= Procdesc.get_loc proc_desc; history= Epoch}
+           ; access_trace= fst must_be_valid
+           ; must_be_valid_reason= snd must_be_valid } ) ;
       Some (LatentInvalidAccess {astate; address; must_be_valid; calling_context= []})
   | ISLError astate ->
       Some (ISLLatentMemoryError astate)

@@ -2765,6 +2765,9 @@ and xcpretty =
     "Infer will use xcpretty together with xcodebuild to analyze an iOS app. xcpretty just needs \
      to be in the path, infer command is still just $(i,`infer -- <xcodebuild command>`)."
 
+and show_latent =
+  CLOpt.mk_bool ~default:false ~long:"show-latent"
+    "Not distinguish latent and manifest bug. Show all potential bug"
 
 (* The "rest" args must appear after "--" on the command line, and hence after other args, so they
    are allowed to refer to the other arg variables. *)
@@ -3712,6 +3715,8 @@ and xcode_developer_dir = !xcode_developer_dir
 and xcode_isysroot_suffix = !xcode_isysroot_suffix
 
 and xcpretty = !xcpretty
+
+and show_latent = !show_latent
 
 (** Configuration values derived from command-line options *)
 
